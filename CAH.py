@@ -18,6 +18,7 @@ Cards against humanity rules:
 class CAH:
     def __init__(self):
         self.users = []
+        self.czar = ''
         self.played_cards = []
         self.blackCard = self.drawBCard()
         self.requiredCards = 1
@@ -33,7 +34,7 @@ class CAH:
         while True:
             if choice not in cards.usedBCards:
                 cards.usedBCards.append(choice)
-                if choice.count("_") > 1:
+                if choice.count("_") >= 1:
                     self.requiredCards = choice.count("_")
                 return choice #Return random black card not already created
 
@@ -61,21 +62,50 @@ class CAH:
     def blankCard(self):
         return r.random() <= .1 #10% chance of getting a blank card
 
-    def playCard(self, user, card):
-        self.played_cards.append()
+    def playCard(self, userIdx, idx):
+        if not self.users[userIdx] == self.czar:
+            card = self.users[userIdx].hand[idx]
+            self.played_cards.append(card)
+            self.users[userIdx].cardsToAdd += 1
+            self.users[userIdx].hand.remove(card)
 
-    def endRound():
-        pass
+            if len(self.played_cards) == len(self.users):
+                self.showPlayedCards()
+
+    def showPlayedCards(self):
+        lineBreak = "------------------------"
+        print("Prompt:\t{}\n{}".format(self.blackCard, lineBreak))
+        for i in range(len(self.played_cards)):
+            print('{}.\t{}\n{}'.format(i+1, self.played_cards[i], lineBreak))
+
+    def getNewCzar(self):
+        if not self.czar == "":
+            self.users[self.users.index(self.czar)].czarToggle()
+        self.czar = r.choice(self.users)
+        self.users[self.users.index(self.czar)].czarToggle()
+
+    def winner(self, userIdx):
+        self.users[userIdx].wonRound()
+
+    def endRound(self):
+        for i in self.users:
+            for j in range(i.cardsToAdd):
+                i.hand.append(self.drawWCard())
+
+    def printInfo(self):
+        print("Black Card: {} (Required Card Count: {})\nCzar: {}".format(self.blackCard, self.requiredCards, self.czar.name))
+        for i in self.users:
+            print("{}:\n\tCzar? {}\n\tScore: {}\n\tHand: {}".format(i.name, i.isCzar, i.score, i.hand))
+        print("\n")
 
     def test(self):
         self._addUser("Test User")
         self.users[0].wonRound()
-        self.users[0].czarToggle()
+        self.getNewCzar()
+        self.printInfo()
+        self.playCard(0, 0)
+        self.endRound()
 
-    def printInfo(self):
-        print("Black Card: {} (Required Card Count: {})".format(self.blackCard, self.requiredCards))
-        for i in self.users:
-            print("{}:\n\tCzar? {}\n\tScore: {}\n\tHand: {}".format(i.name, i.isCzar, i.score, i.hand))
 
 class Player:
     def __init__(self, name, hand):
@@ -95,5 +125,3 @@ if __name__ == '__main__':
     cards = Cards.Cards()
     cah = CAH()
     cah.test()
-    cah.printInfo()
-    print("CAH completed")
