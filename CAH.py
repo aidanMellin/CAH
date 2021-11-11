@@ -28,6 +28,12 @@ class CAH:
         self.users.append(Player(user, self.getHand()))
         self.played_cards.append(None)
 
+    def getUserIndex(self, user):
+        '''
+        Return int of the user index of the user designated
+        '''
+        return self.users.index(user)
+
     def drawBCard(self):
         '''
         Draw random black card (if not already used)
@@ -93,15 +99,14 @@ class CAH:
             userIdx ([int]): [index position of the user]
             idx ([int]): [index of the card the user is playing]
         """
-        # idx -= 1   
         user = self.users[userIdx]
-        if not user == self.czar and not user.played:
+        if not user == self.czar:
             card = user.hand[idx]
             if card == "___":
                 card = self.useBlankCard()
                 user.hand[userIdx] = card
             self.played_cards[userIdx] = card
-            user.played = True
+            # user.played = True
             user.cardsToAdd += 1
             user.hand.remove(card)
 
@@ -111,12 +116,12 @@ class CAH:
 
     def showPlayedCards(self):
         lineBreak = "------------------------"
-        strReturn = "Prompt:\t{}\n{}\n".format(self.blackCard, lineBreak)
-        i = 0
-        while i < len(self.played_cards)-1:
-            if self.played_cards[i] is not None and self.played_cards[i] != "":
-                strReturn += '{}.\t{}\n{}\n'.format(i+1, self.played_cards[i], lineBreak) 
-                i += 1
+        strReturn = "\nPrompt:\t{}\n{}\n".format(self.blackCard, lineBreak)
+        j = 0
+        for i in range(len(self.played_cards)):
+            if self.played_cards[i] is not None:
+                strReturn += '{}.\t{}\n{}\n'.format(j+1, self.played_cards[i], lineBreak) 
+                j += 1
 
         return strReturn
 
@@ -133,17 +138,14 @@ class CAH:
     def getNewCzar(self):
         if not self.czar == "":
             self.users[self.users.index(self.czar)].czarToggle()
-            self.users[self.users.index(self.czar)].played = False
 
         self.czar = r.choice(self.users)
         self.users[self.users.index(self.czar)].czarToggle()
         self.users[self.users.index(self.czar)].played = True
-        self.played_cards[self.users.index(self.czar)] = "I am Czar. I shan't play"
 
         return "New Czar is {}".format(self.czar)
 
     def winner(self, userIdx):
-        userIdx -= 1
         self.users[userIdx].wonRound()
         self.endRound()
         strReturn = "{} wins!\n".format(self.users[userIdx].name)
@@ -184,9 +186,8 @@ class CAH:
         print(self.playCard(2, 1))
 
         print(self.winner(1))
-        self.endRound()
 
-        print(self.showHand(0))
+        # print(self.showHand(0))
 
 
 class Player:
