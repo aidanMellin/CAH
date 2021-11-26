@@ -1,6 +1,6 @@
 #Author: Aidan Mellin
 
-import Cards
+import importCards
 import random as r
 
 """
@@ -17,16 +17,17 @@ Cards against humanity rules:
 
 class CAH:
     def __init__(self):
-        self.users = []
-        self.czar = ''
-        self.voteAvailable = False
-        self.played_cards = []
+        self.users = [] #List of users
+        self.czar = '' #Current czar for round (votes on which card wins)
+        self.voteAvailable = False #I don't think this is necessary
         self.blackCard = self.drawBCard()
         self.requiredCards = 1
 
-    def _addUser(self, user):
-        self.users.append(Player(user, self.getHand()))
-        self.played_cards.append(None)
+        self.played_cards = {}
+
+    def _addUser(self, user): #Add a user to the game
+        user = Player(user, self.getHand())
+        self.users.append(user)
 
     def getUserIndex(self, user):
         '''
@@ -102,26 +103,23 @@ class CAH:
         user = self.users[userIdx]
         if not user == self.czar:
             card = user.hand[idx]
-            if card == "___":
+            if card == "___": #White card instance
                 card = self.useBlankCard()
-                user.hand[userIdx] = card
-            self.played_cards[userIdx] = card
-            # user.played = True
-            user.cardsToAdd += 1
+                user.hand[userIdx] = card #Replace blank card with inputted text
+            self.played_cards.update({card : user})
             user.hand.remove(card)
-
-            if self.played_cards.count(None) <= 1:
+            if len(self.played_cards) == len(self.users) - 1:
                 self.voteAvailable = True
-                return self.showPlayedCards()
+                return self.showplayed_cards()
 
-    def showPlayedCards(self):
+            return False
+
+    def showplayed_cards(self):
         lineBreak = "------------------------"
-        strReturn = "\nPrompt:\t{}\n{}\n".format(self.blackCard, lineBreak)
-        j = 0
-        for i in range(len(self.played_cards)):
-            if self.played_cards[i] is not None:
-                strReturn += '{}.\t{}\n{}\n'.format(j+1, self.played_cards[i], lineBreak) 
-                j += 1
+        strReturn = "\n\t===Which Card Wins?===\nPrompt:\t{}\n{}\n".format(self.blackCard, lineBreak)
+
+        for count, value in enumerate(self.played_cards):
+            strReturn += '{}.\t{}\n{}\n'.format(count + 1, value, lineBreak) 
 
         return strReturn
 
@@ -143,52 +141,72 @@ class CAH:
         self.users[self.users.index(self.czar)].czarToggle()
         self.users[self.users.index(self.czar)].played = True
 
-        return "New Czar is {}".format(self.czar)
+        return "New Czar is {}".format(self.czar.name)
 
-    def winner(self, userIdx):
-        self.users[userIdx].wonRound()
-        self.endRound()
-        strReturn = "{} wins!\n".format(self.users[userIdx].name)
-        strReturn += self.getScoreboard()
-        self.endRound()
-        return strReturn
+    def winner(self, user):
+        if not user.isCzar:
+            user.wonRound()
+            self.endRound()
+            strReturn = "{} wins!\n".format(user.name)
+            strReturn += self.getScoreboard()
+            strReturn += self.endRound()
+            return strReturn
+        else:
+            return self.winner(self.played_cards.get(value) for count, value in enumerate(self.played_cards)[int(input("Invalid selection. Enter winning card number: ")) - 1])
 
     def endRound(self):
         for i in self.users:
             for j in range(i.cardsToAdd):
                 i.hand.append(self.drawWCard())
             i.played = False
+        self.blackCard = self.drawBCard()
         self.voteAvailable = False
-        for i in range(len(self.played_cards)):
-            self.played_cards[i] = None
-        self.getNewCzar()
-        
+        self.played_cards.clear()
+        return self.getNewCzar()
+
 
     def printInfo(self):
-        print("Black Card: {} (Required Card Count: {})\nCzar: {}".format(self.blackCard, self.requiredCards, self.czar.name))
+        strRtn = "Black Card: {} (Required Card Count: {})\nCzar: {}".format(self.blackCard, self.requiredCards, self.czar.name)
         for i in self.users:
-            print("{}:\n\tCzar? {}\n\tScore: {}\n\tHand: {}".format(i.name, i.isCzar, i.score, i.hand))
-        print("\n")
+            strRtn += "{}:\n\tCzar? {}\n\tScore: {}\n\tHand: {}".format(i.name, i.isCzar, i.score, i.hand)
+        strRtn += "\n"
+        return strRtn
 
     def test(self):
         self._addUser("Test User 1")
         self._addUser("Test User 2")
         self._addUser("Test User 3")
 
-        self.users[0].wonRound()
-        self.users[0].wonRound()
-        self.users[1].wonRound()
-        
-        self.getNewCzar()
-        # self.printInfo()
-        self.playCard(0, 1)
-        self.playCard(1, 1)
-        print(self.playCard(2, 1))
+        while True:
+            play_cards = []
 
-        print(self.winner(1))
+            print("This round's prompt: {}".format(self.blackCard))
+            print("There are {} blank spots".format(self.blackCard.count("_")))
 
-        # print(self.showHand(0))
+            self.users[0].wonRound()
+            self.users[0].wonRound()
+            self.users[1].wonRound()
+            
+            self.getNewCzar()
+            # print(self.printInfo())
+            print(self.showHand(2))
 
+            play_cards.append([0,1])
+            play_cards.append([1,1])
+            play_cards.append([2, int(input("Enter card number to play: "))-1])
+
+            for i in play_cards:
+                card = self.playCard(i[0], i[1])
+                print("{}".format(card) if not card == None and not card  == False else '')
+
+            vote = int(input("Enter winning card number: ")) - 1
+            while True:
+                try:
+                    print("\n{}".format(self.winner([self.played_cards.get(value) for count, value in enumerate(self.played_cards)][vote])))
+                    break
+                except Exception as e:
+                    vote = int(input("Invalid selection. Enter winning card number: ")) - 1
+            print("\n")
 
 class Player:
     def __init__(self, name, hand):
@@ -230,6 +248,6 @@ def quickSort(arr, low, high):
     return arr
 
 if __name__ == '__main__':
-    cards = Cards.Cards()
+    cards = importCards.Cards()
     cah = CAH()
     cah.test()
