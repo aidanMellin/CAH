@@ -1,6 +1,10 @@
 #Author: Aidan Mellin
-from CAH import *
+import CAH
+
+'''
+I probably won't finish implmenting this without it being sent over a WLAN net coding. Im going to focus on discord bot implementation first
+'''
 
 class CLI:
     def __init__(self):
-        return
+        self.cah = CAH()
